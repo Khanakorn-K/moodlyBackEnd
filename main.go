@@ -3,6 +3,8 @@ package main
 import (
 	"moodly/controllers"
 	"moodly/initializers"
+	"moodly/repositories"
+	"moodly/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,10 +20,22 @@ func main() {
 
 	r := gin.Default()
 
-	r.POST("/posts", controllers.CreatePost)
-	r.GET("/posts", controllers.GetPosts)
-	r.GET("/posts/:id", controllers.GetPostByID)
-	r.PUT("/posts/:id", controllers.UpdatePost)
-	r.DELETE("/posts/:id", controllers.DeletePost)
+	// PostRepo := repositories.NewPostRepository(initializers.DB)
+	// PostService := services.NewPostService(PostRepo)
+	// PostController := controllers.NewPostController(PostService)
+
+	// r.POST("/posts", PostController.CreatePost)
+	// r.GET("/posts", PostController.GetPosts)
+	// r.GET("/posts/:id", PostController.GetPostByID)
+	// r.PUT("/posts/:id", PostController.UpdatePost)
+	// r.DELETE("/posts/:id", PostController.DeletePost)
+
+	AuthRepo := repositories.NewAuthRepository(initializers.DB)
+	AuthService := services.NewAuthService(AuthRepo)
+	AuthController := controllers.NewAuthController(AuthService)
+
+	r.POST("/register", AuthController.HandleRegister)
+	r.POST("/login", AuthController.HandleLogin)
+
 	r.Run()
 }

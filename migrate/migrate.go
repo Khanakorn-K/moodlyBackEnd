@@ -13,5 +13,6 @@ func init() {
 }
 
 func main() {
-	initializers.DB.AutoMigrate(&models.PostModel{})
+	//ถ้ามีการเพิ่ม model หรือแก้ไข อย่าลืม migrate
+	initializers.DB.AutoMigrate(&models.PostModel{}, &models.User{})
 }
