@@ -2,13 +2,23 @@ package controllers
 
 import (
 	models "moodly/Models"
-	"moodly/initializers"
+	"moodly/services"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func CreatePost(c *gin.Context) {
+type PostController struct {
+	service *services.PostService
+}
+
+func NewPostController(service *services.PostService) *PostController {
+	return &PostController{
+		service: service,
+	}
+}
+
+func (pc *PostController) CreatePost(c *gin.Context) {
 	var post models.PostModel
 
 	if err := c.ShouldBindJSON(&post); err != nil {
@@ -19,11 +29,10 @@ func CreatePost(c *gin.Context) {
 		return
 	}
 
-	result := initializers.DB.Create(&post)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+	if err := pc.service.CreatePost(&post); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "failed to create post",
-			"error":   result.Error.Error(),
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -34,14 +43,12 @@ func CreatePost(c *gin.Context) {
 	})
 }
 
-func GetPosts(c *gin.Context) {
-	var posts []models.PostModel
-
-	result := initializers.DB.Find(&posts)
-	if result.Error != nil {
+func (pc *PostController) GetPosts(c *gin.Context) {
+	posts, err := pc.service.GetPosts()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to get posts",
-			"error":   result.Error.Error(),
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -52,16 +59,14 @@ func GetPosts(c *gin.Context) {
 	})
 }
 
-func GetPostByID(c *gin.Context) {
+func (pc *PostController) GetPostByID(c *gin.Context) {
 	id := c.Param("id")
 
-	var post models.PostModel
-
-	result := initializers.DB.First(&post, id)
-	if result.Error != nil {
+	post, err := pc.service.GetPostByID(id)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "post not found",
-			"error":   result.Error.Error(),
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -72,22 +77,11 @@ func GetPostByID(c *gin.Context) {
 	})
 }
 
-func UpdatePost(c *gin.Context) {
+func (pc *PostController) UpdatePost(c *gin.Context) {
 	id := c.Param("id")
 
-	var post models.PostModel
-	//หา ก่อน
-	result := initializers.DB.First(&post, id)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "post not found",
-			"error":   result.Error.Error(),
-		})
-		return
-	}
-
 	var body models.PostModel
-	// เช้ค req
+
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"message": "bad request",
@@ -96,11 +90,11 @@ func UpdatePost(c *gin.Context) {
 		return
 	}
 
-	result = initializers.DB.Model(&post).Updates(body)
-	if result.Error != nil {
+	post, err := pc.service.UpdatePost(id, body)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to update post",
-			"error":   result.Error.Error(),
+			"error":   err.Error(),
 		})
 		return
 	}
@@ -111,25 +105,13 @@ func UpdatePost(c *gin.Context) {
 	})
 }
 
-func DeletePost(c *gin.Context) {
+func (pc *PostController) DeletePost(c *gin.Context) {
 	id := c.Param("id")
 
-	var post models.PostModel
-
-	result := initializers.DB.First(&post, id)
-	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"message": "post not found",
-			"error":   result.Error.Error(),
-		})
-		return
-	}
-
-	result = initializers.DB.Delete(&post)
-	if result.Error != nil {
+	if err := pc.service.DeletePost(id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to delete post",
-			"error":   result.Error.Error(),
+			"error":   err.Error(),
 		})
 		return
 	}
