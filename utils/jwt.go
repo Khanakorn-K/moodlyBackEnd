@@ -7,6 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// สร้าง token ประกอบไปด้วย userId email เวลาหมดอายุ สามตัวไปก่อน
 func GenerateJWT(userID uint, email string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
