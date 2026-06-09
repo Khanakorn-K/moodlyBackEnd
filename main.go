@@ -3,6 +3,7 @@ package main
 import (
 	"moodly/controllers"
 	"moodly/initializers"
+	"moodly/middlewares"
 	"moodly/repositories"
 	"moodly/services"
 
@@ -20,22 +21,26 @@ func main() {
 
 	r := gin.Default()
 
-	// PostRepo := repositories.NewPostRepository(initializers.DB)
-	// PostService := services.NewPostService(PostRepo)
-	// PostController := controllers.NewPostController(PostService)
-
-	// r.POST("/posts", PostController.CreatePost)
-	// r.GET("/posts", PostController.GetPosts)
-	// r.GET("/posts/:id", PostController.GetPostByID)
-	// r.PUT("/posts/:id", PostController.UpdatePost)
-	// r.DELETE("/posts/:id", PostController.DeletePost)
-
 	AuthRepo := repositories.NewAuthRepository(initializers.DB)
 	AuthService := services.NewAuthService(AuthRepo)
 	AuthController := controllers.NewAuthController(AuthService)
 
-	r.POST("/register", AuthController.HandleRegister)
-	r.POST("/login", AuthController.HandleLogin)
+	auth := r.Group("/auth")
+
+	auth.POST("/register", AuthController.HandleRegister)
+	auth.POST("/login", AuthController.HandleLogin)
+
+	PostRepo := repositories.NewPostRepository(initializers.DB)
+	PostService := services.NewPostService(PostRepo)
+	PostController := controllers.NewPostController(PostService)
+
+	post := r.Group("/post")
+	post.Use(middlewares.AuthMiddleware())
+	post.POST("/createpost", PostController.CreatePost)
+	post.GET("/getposts", PostController.GetPosts)
+	post.GET("/getpost/:id", PostController.GetPostByID)
+	post.PUT("/updatepost/:id", PostController.UpdatePost)
+	post.DELETE("/deletepost/:id", PostController.DeletePost)
 
 	r.Run()
 }
