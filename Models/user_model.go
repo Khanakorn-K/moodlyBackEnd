@@ -9,4 +9,5 @@ type User struct {
 	Password  string    `gorm:"type:varchar(255);not null" json:"-"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	MoodLogs  []MoodLog `gorm:"foreignKey:UserID" json:"mood_logs,omitempty"`
 }
