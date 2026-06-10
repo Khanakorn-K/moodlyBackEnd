@@ -7,7 +7,7 @@ type MoodLog struct {
 	UserID    uint      `gorm:"not null;index" json:"user_id"`
 	Mood      int       `gorm:"not null" json:"mood"`
 	Note      string    `json:"note"`
-	Causes    string    `json:"causes"`
+	Causes    string    `gorm:"not null;index" json:"causes"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 

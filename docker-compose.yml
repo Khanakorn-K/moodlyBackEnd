@@ -1,0 +1,17 @@
+name: moodlydb
+
+services:
+  postgres:
+    image: 4b7183ac05f8
+    container_name: moodlydb
+    environment:
+      POSTGRES_DB: moodlydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456789
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+volumes:
+  postgres_data:

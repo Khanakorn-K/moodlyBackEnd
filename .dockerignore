@@ -1,0 +1,48 @@
+# Version Control
+.git
+.gitignore
+.gitattributes
+
+# Docker Files
+Dockerfile
+Dockerfile*
+docker-compose.yml
+.dockerignore
+
+# Go Build Output and Binaries
+bin/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+out/
+__debug_bin
+
+# Go Testing and Coverage
+*.test
+*.out
+coverage.txt
+c.out
+
+# Local Configuration and Environment Files
+.env
+.env.*
+!.env.example
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Dependencies (if cached locally)
+vendor/

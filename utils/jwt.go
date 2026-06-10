@@ -7,7 +7,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// สร้าง token ประกอบไปด้วย userId email เวลาหมดอายุ สามตัวไปก่อน
+// token ที่สร้างจะเก็บข้อมูลหลัก ๆ คือ user_id, email และเวลาหมดอายุ exp โดย token จะถูกเซ็นด้วย JWT_SECRET เพื่อป้องกันการปลอมแปลง
+// หลังจากสร้างเสร็จ ระบบจะส่ง token นี้กลับไปให้ client ใช้แนบไปกับ request ที่ต้องการยืนยันตัวตน เช่น
+// Authorization: Bearer <token>
+// สรุป: ใช้สร้าง token สำหรับยืนยันตัวตนของผู้ใช้ในระบบ
 func GenerateJWT(userID uint, email string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,

@@ -38,8 +38,20 @@ func (mc *MoodLogsController) CreateMoodLog(c *gin.Context) {
 		return
 	}
 
-	var moodLog models.MoodLog
+	type CreateMoodLogRequest struct {
+		Mood   int    `json:"mood" binding:"required"`
+		Note   string `json:"note"`
+		Causes string `json:"causes"`
+	}
 
+	var req CreateMoodLogRequest
+
+	moodLog := models.MoodLog{
+		UserID: userID,
+		Mood:   req.Mood,
+		Note:   req.Note,
+		Causes: req.Causes,
+	}
 	if err := c.ShouldBindJSON(&moodLog); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return

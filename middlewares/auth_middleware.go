@@ -9,6 +9,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// โค้ดนี้คือ ตัวตรวจว่า request มี JWT token ที่ถูกต้องไหม
+// ถ้าถูก → ดึง user_id เก็บไว้ให้ controller ใช้
+// ถ้าผิด → ตอบ 401 unauthorized
+
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
