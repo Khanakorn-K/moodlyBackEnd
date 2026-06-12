@@ -14,5 +14,10 @@ func init() {
 
 func main() {
 	//ถ้ามีการเพิ่ม model หรือแก้ไข อย่าลืม migrate
-	initializers.DB.AutoMigrate(&models.MoodLog{}, &models.User{}, &models.CustomCause{})
+	initializers.DB.AutoMigrate(
+		&models.User{},
+		&models.OAuthAccount{},
+		&models.MoodLog{},
+		&models.CustomCause{},
+	)
 }

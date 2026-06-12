@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"os"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 // Authorization: Bearer <token>
 // สรุป: ใช้สร้าง token สำหรับยืนยันตัวตนของผู้ใช้ในระบบ
 func GenerateJWT(userID uint, email string) (string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		return "", errors.New("jwt secret is required")
+	}
+
 	claims := jwt.MapClaims{
 		"user_id": userID,
 		"email":   email,
@@ -20,5 +26,5 @@ func GenerateJWT(userID uint, email string) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	return token.SignedString([]byte(secret))
 }

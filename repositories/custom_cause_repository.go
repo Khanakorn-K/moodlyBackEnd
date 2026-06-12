@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	models "moodly/Models"
 
 	"gorm.io/gorm"
@@ -41,9 +42,32 @@ func (r *CustomCauseRepository) FindByID(id uint, userID uint) (*models.CustomCa
 }
 
 func (r *CustomCauseRepository) Update(cause *models.CustomCause) error {
-	return r.db.Save(cause).Error
+	result := r.db.
+		Model(&models.CustomCause{}).
+		Where("id = ? AND user_id = ?", cause.ID, cause.UserID).
+		Updates(map[string]interface{}{
+			"name": cause.Name,
+		})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("cause not found or unauthorized")
+	}
+
+	return nil
 }
 
 func (r *CustomCauseRepository) Delete(id uint, userID uint) error {
-	return r.db.Where("id = ? AND user_id = ?", id, userID).Delete(&models.CustomCause{}).Error
+	result := r.db.Where("id = ? AND user_id = ?", id, userID).Delete(&models.CustomCause{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("cause not found or unauthorized")
+	}
+
+	return nil
 }

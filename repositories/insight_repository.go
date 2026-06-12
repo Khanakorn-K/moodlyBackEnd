@@ -2,6 +2,7 @@ package repositories
 
 import (
 	models "moodly/Models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -16,25 +17,25 @@ func NewInsightRepository(db *gorm.DB) *InsightRepository {
 
 func (r *InsightRepository) FindMoodLogs(
 	userID uint,
-	mood string,
-	startDate string,
-	endDate string,
+	mood *int,
+	startDate *time.Time,
+	endDate *time.Time,
 ) ([]models.MoodLog, int64, error) {
 	var moodLogs []models.MoodLog
 	var total int64
 
 	query := r.db.Where("user_id = ?", userID)
 
-	if mood != "" {
-		query = query.Where("mood = ?", mood)
+	if mood != nil {
+		query = query.Where("mood = ?", *mood)
 	}
 
-	if startDate != "" {
-		query = query.Where("created_at >= ?", startDate+" 00:00:00")
+	if startDate != nil {
+		query = query.Where("created_at >= ?", *startDate)
 	}
 
-	if endDate != "" {
-		query = query.Where("created_at <= ?", endDate+" 23:59:59")
+	if endDate != nil {
+		query = query.Where("created_at < ?", endDate.AddDate(0, 0, 1))
 	}
 
 	if err := query.Model(&models.MoodLog{}).Count(&total).Error; err != nil {

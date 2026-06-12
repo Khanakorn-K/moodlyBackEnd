@@ -4,7 +4,9 @@ import (
 	"errors"
 	models "moodly/Models"
 	"moodly/repositories"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type InsightService struct {
@@ -35,7 +37,26 @@ func (s *InsightService) FindMoodLogs(
 	startDate = strings.TrimSpace(startDate)
 	endDate = strings.TrimSpace(endDate)
 
-	logs, total, err := s.repo.FindMoodLogs(userID, mood, startDate, endDate)
+	moodFilter, err := parseOptionalMood(mood)
+	if err != nil {
+		return nil, err
+	}
+
+	startDateFilter, err := parseOptionalDate(startDate)
+	if err != nil {
+		return nil, err
+	}
+
+	endDateFilter, err := parseOptionalDate(endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	if startDateFilter != nil && endDateFilter != nil && startDateFilter.After(*endDateFilter) {
+		return nil, errors.New("invalid date range")
+	}
+
+	logs, total, err := s.repo.FindMoodLogs(userID, moodFilter, startDateFilter, endDateFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -45,4 +66,30 @@ func (s *InsightService) FindMoodLogs(
 		Total: total,
 		Page:  1,
 	}, nil
+}
+
+func parseOptionalMood(value string) (*int, error) {
+	if value == "" {
+		return nil, nil
+	}
+
+	mood, err := strconv.Atoi(value)
+	if err != nil || mood < 1 || mood > 5 {
+		return nil, errors.New("mood must be between 1 and 5")
+	}
+
+	return &mood, nil
+}
+
+func parseOptionalDate(value string) (*time.Time, error) {
+	if value == "" {
+		return nil, nil
+	}
+
+	parsedDate, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return nil, errors.New("invalid date format")
+	}
+
+	return &parsedDate, nil
 }

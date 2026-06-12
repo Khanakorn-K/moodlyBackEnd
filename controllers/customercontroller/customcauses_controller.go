@@ -79,15 +79,18 @@ func (cc *CustomCauseController) UpdateCause(c *gin.Context) {
 		return
 	}
 
-	var cause models.CustomCause
+	var req createCustomCausesRequest
 
-	if err := c.ShouldBindJSON(&cause); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	cause.ID = uint(id)
-	cause.UserID = userID
+	cause := models.CustomCause{
+		ID:     uint(id),
+		UserID: userID,
+		Name:   req.Name,
+	}
 
 	if err := cc.service.UpdateCause(&cause); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})

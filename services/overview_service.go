@@ -75,6 +75,7 @@ func (s *OverviewService) GetMonthlyAverageMood(userID uint, month string) (*Mon
 		return nil, errors.New("user id is required")
 	}
 
+	month = strings.TrimSpace(month)
 	if month == "" {
 		return nil, errors.New("month is required")
 	}
@@ -93,8 +94,8 @@ func (s *OverviewService) GetMonthlyAverageMood(userID uint, month string) (*Mon
 
 	return &MonthlyAverageMoodResult{
 		Month:             month,
-		StartDate:         startDate,
-		EndDate:           endDate,
+		StartDate:         formatDate(startDate),
+		EndDate:           formatDate(endDate),
 		TotalLogs:         len(logs),
 		AverageMood:       calculateAverageMood(logs),
 		DailyMoodAverages: calculateDailyMoodAverages(logs, dateRange),
@@ -106,24 +107,36 @@ func (s *OverviewService) GetOverview(userID uint, startDate string, endDate str
 		return nil, errors.New("user id is required")
 	}
 
+	startDate = strings.TrimSpace(startDate)
+	endDate = strings.TrimSpace(endDate)
 	if startDate == "" || endDate == "" {
 		return nil, errors.New("date range is required")
 	}
 
-	if startDate > endDate {
-		return nil, errors.New("invalid date range")
-	}
-
-	logs, err := s.repo.FindMoodLogsByDateRange(userID, startDate, endDate)
+	parsedStartDate, err := parseDate(startDate)
 	if err != nil {
 		return nil, err
 	}
 
-	dateRange := createDateRange(startDate, endDate)
+	parsedEndDate, err := parseDate(endDate)
+	if err != nil {
+		return nil, err
+	}
+
+	if parsedStartDate.After(parsedEndDate) {
+		return nil, errors.New("invalid date range")
+	}
+
+	logs, err := s.repo.FindMoodLogsByDateRange(userID, parsedStartDate, parsedEndDate)
+	if err != nil {
+		return nil, err
+	}
+
+	dateRange := createDateRange(parsedStartDate, parsedEndDate)
 
 	return &OverviewResult{
-		StartDate:         startDate,
-		EndDate:           endDate,
+		StartDate:         formatDate(parsedStartDate),
+		EndDate:           formatDate(parsedEndDate),
 		TotalLogs:         len(logs),
 		AverageMood:       calculateAverageMood(logs),
 		DailyMoodAverages: calculateDailyMoodAverages(logs, dateRange),
@@ -311,35 +324,34 @@ func splitCauses(causes string) []string {
 	return result
 }
 
-func createMonthDateRange(month string) (string, string, error) {
+func createMonthDateRange(month string) (time.Time, time.Time, error) {
 	start, err := time.Parse("2006-01", month)
 	if err != nil {
-		return "", "", errors.New("invalid month format")
+		return time.Time{}, time.Time{}, errors.New("invalid month format")
 	}
 
 	end := start.AddDate(0, 1, -1)
 
-	return start.Format("2006-01-02"), end.Format("2006-01-02"), nil
+	return start, end, nil
 }
 
-func createDateRange(startDate string, endDate string) []string {
-	start, err := time.Parse("2006-01-02", startDate)
-	if err != nil {
-		return []string{}
-	}
-
-	end, err := time.Parse("2006-01-02", endDate)
-	if err != nil {
-		return []string{}
-	}
-
+func createDateRange(startDate time.Time, endDate time.Time) []string {
 	result := []string{}
 
-	for current := start; !current.After(end); current = current.AddDate(0, 0, 1) {
+	for current := startDate; !current.After(endDate); current = current.AddDate(0, 0, 1) {
 		result = append(result, current.Format("2006-01-02"))
 	}
 
 	return result
+}
+
+func parseDate(value string) (time.Time, error) {
+	parsedDate, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return time.Time{}, errors.New("invalid date format")
+	}
+
+	return parsedDate, nil
 }
 
 func formatDate(value time.Time) string {

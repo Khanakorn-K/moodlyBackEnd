@@ -36,3 +36,37 @@ func (r *AuthRepository) Login(email string, password string) (*models.User, err
 	}
 	return user, nil
 }
+
+func (r *AuthRepository) FindOAuthAccount(provider string, providerAccountID string) (*models.OAuthAccount, error) {
+	var account models.OAuthAccount
+
+	err := r.db.Where(
+		"provider = ? AND provider_account_id = ?",
+		provider,
+		providerAccountID,
+	).First(&account).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &account, nil
+}
+
+func (r *AuthRepository) FindOAuthAccountWithUser(provider string, providerAccountID string) (*models.OAuthAccount, error) {
+	var account models.OAuthAccount
+
+	err := r.db.
+		Preload("User").
+		Where("provider = ? AND provider_account_id = ?", provider, providerAccountID).
+		First(&account).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &account, nil
+}
+
+func (r *AuthRepository) CreateOAuthAccount(account *models.OAuthAccount) error {
+	return r.db.Create(account).Error
+}

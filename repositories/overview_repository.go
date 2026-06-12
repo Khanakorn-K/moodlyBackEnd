@@ -2,6 +2,7 @@ package repositories
 
 import (
 	models "moodly/Models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -16,15 +17,15 @@ func NewOverviewRepository(db *gorm.DB) *OverviewRepository {
 
 func (r *OverviewRepository) FindMoodLogsByDateRange(
 	userID uint,
-	startDate string,
-	endDate string,
+	startDate time.Time,
+	endDate time.Time,
 ) ([]models.MoodLog, error) {
 	var moodLogs []models.MoodLog
 
 	err := r.db.
 		Where("user_id = ?", userID).
-		Where("created_at >= ?", startDate+" 00:00:00").
-		Where("created_at <= ?", endDate+" 23:59:59").
+		Where("created_at >= ?", startDate).
+		Where("created_at < ?", endDate.AddDate(0, 0, 1)).
 		Order("created_at ASC").
 		Find(&moodLogs).Error
 

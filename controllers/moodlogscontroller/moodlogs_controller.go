@@ -70,7 +70,7 @@ func (mc *MoodLogsController) GetMoodLogsByDate(c *gin.Context) {
 }
 
 func (mc *MoodLogsController) UpdateMoodLog(c *gin.Context) {
-	_, ok := helpers.GetUserIDFromContext(c)
+	userID, ok := helpers.GetUserIDFromContext(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
 		return
@@ -90,6 +90,7 @@ func (mc *MoodLogsController) UpdateMoodLog(c *gin.Context) {
 
 	moodLog := models.MoodLog{
 		ID:     uint(id),
+		UserID: uint(userID),
 		Mood:   req.Mood,
 		Note:   req.Note,
 		Causes: req.Causes,

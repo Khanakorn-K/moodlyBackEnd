@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// โค้ดนี้คือ ตัวตรวจว่า request มี JWT token ที่ถูกต้องไหม
+// โค้ดนี้คือ ตัวตรวจว่า request Header มี JWT token ที่ถูกต้องไหม
 // ถ้าถูก → ดึง user_id เก็บไว้ให้ controller ใช้
 // ถ้าผิด → ตอบ 401 unauthorized
 
@@ -34,9 +35,18 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "jwt secret is not configured",
+			})
+			c.Abort()
+			return
+		}
+
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte(os.Getenv("JWT_SECRET")), nil
-		})
+			return []byte(secret), nil
+		}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -59,6 +69,14 @@ func AuthMiddleware() gin.HandlerFunc {
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "user id not found in token",
+			})
+			c.Abort()
+			return
+		}
+
+		if userIDFloat <= 0 || math.Trunc(userIDFloat) != userIDFloat {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "invalid user id in token",
 			})
 			c.Abort()
 			return
