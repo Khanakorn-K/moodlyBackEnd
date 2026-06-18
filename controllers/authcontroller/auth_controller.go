@@ -146,3 +146,60 @@ func (ac *AuthController) HandleGoogleCallback(c *gin.Context) {
 		parsedRedirectURL.String(),
 	)
 }
+
+type OAuthGoogleLoginRequest struct {
+	Email             string `json:"email" binding:"required"`
+	Name              string `json:"name"`
+	Provider          string `json:"provider"`
+	ProviderAccountID string `json:"providerAccountId" binding:"required"`
+}
+
+func (ac *AuthController) HandleOAuthGoogleLogin(c *gin.Context) {
+	var req OAuthGoogleLoginRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success":    false,
+			"statusCode": http.StatusBadRequest,
+			"data":       nil,
+			"error": gin.H{
+				"code":    "INVALID_REQUEST_BODY",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	token, user, err := ac.service.LoginWithOAuthGoogle(
+		req.Email,
+		req.Name,
+		req.Provider,
+		req.ProviderAccountID,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success":    false,
+			"statusCode": http.StatusUnauthorized,
+			"data":       nil,
+			"error": gin.H{
+				"code":    "GOOGLE_LOGIN_FAILED",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"statusCode": http.StatusOK,
+		"data": gin.H{
+			"token": token,
+			"user": gin.H{
+				"id":    user.ID,
+				"name":  user.Name,
+				"email": user.Email,
+			},
+		},
+	})
+}

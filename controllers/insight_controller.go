@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"moodly/helpers"
 	"moodly/services"
 	"net/http"
@@ -16,26 +17,40 @@ func NewInsightController(service *services.InsightService) *InsightController {
 	return &InsightController{service: service}
 }
 
-func (ic *InsightController) FindMoodLogs(c *gin.Context) {
+func (ic *InsightController) GetInsights(c *gin.Context) {
 	userID, ok := helpers.GetUserIDFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"message": "unauthorized",
-		})
+		helpers.CreateAPIErrorResponse(
+			c,
+			http.StatusUnauthorized,
+			"UNAUTHORIZED",
+			"unauthorized",
+		)
 		return
 	}
 
-	mood := c.Query("mood")
-	startDate := c.Query("startDate")
-	endDate := c.Query("endDate")
+	selectedDate := c.Query("selectedDate")
 
-	result, err := ic.service.FindMoodLogs(userID, mood, startDate, endDate)
+	result, err := ic.service.GetInsights(userID, selectedDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": err.Error(),
-		})
+		if errors.Is(err, services.ErrInvalidDateFormat) {
+			helpers.CreateAPIErrorResponse(
+				c,
+				http.StatusBadRequest,
+				"INVALID_DATE_FORMAT",
+				err.Error(),
+			)
+			return
+		}
+
+		helpers.CreateAPIErrorResponse(
+			c,
+			http.StatusInternalServerError,
+			"INTERNAL_SERVER_ERROR",
+			"internal server error",
+		)
 		return
 	}
 
-	c.JSON(http.StatusOK, result)
+	helpers.CreateAPIResponse(c, http.StatusOK, result)
 }

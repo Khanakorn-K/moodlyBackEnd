@@ -31,8 +31,12 @@ func registerAuthRoutes(r *gin.Engine) {
 	auth.POST("/register", authController.HandleRegister)
 	auth.POST("/login", authController.HandleLogin)
 
-	auth.GET("/google/login", authController.HandleGoogleLogin)
-	auth.GET("/google/callback", authController.HandleGoogleCallback)
+	// สำหรับ Go OAuth redirect flow
+	// auth.POST("/google/login", authController.HandleGoogleLogin)
+	// auth.GET("/google/callback", authController.HandleGoogleCallback)
+
+	// สำหรับ NextAuth ส่ง profile จาก Google มาให้ backend
+	auth.POST("/oauth/google", authController.HandleOAuthGoogleLogin)
 }
 
 func registerMoodLogsRoutes(r *gin.Engine) {
@@ -71,7 +75,7 @@ func registerInsightRoutes(r *gin.Engine) {
 	insight := r.Group("/insights")
 	insight.Use(middlewares.AuthMiddleware())
 
-	insight.GET("/get-insights", insightController.FindMoodLogs)
+	insight.GET("/get-insights", insightController.GetInsights)
 }
 
 func registerOverviewRoutes(r *gin.Engine) {

@@ -182,6 +182,59 @@ func (s *AuthService) FindOrCreateOAuthUser(
 	return user, nil
 }
 
+func (s *AuthService) LoginWithOAuthGoogle(
+	email string,
+	name string,
+	provider string,
+	providerAccountID string,
+) (string, *models.User, error) {
+	if email == "" {
+		return "", nil, errors.New("email is required")
+	}
+
+	if providerAccountID == "" {
+		return "", nil, errors.New("provider account id is required")
+	}
+
+	if provider == "" {
+		provider = "google"
+	}
+
+	if name == "" {
+		name = email
+	}
+
+	user, err := s.repo.FindByEmail(email)
+	if err != nil {
+		user = &models.User{
+			Name:     name,
+			Email:    email,
+			Password: nil,
+		}
+
+		if err := s.repo.CreateUser(user); err != nil {
+			return "", nil, err
+		}
+	}
+
+	_, err = s.repo.FindOrCreateOAuthAccount(
+		user.ID,
+		provider,
+		providerAccountID,
+	)
+
+	if err != nil {
+		return "", nil, err
+	}
+
+	token, err := utils.GenerateJWT(user.ID, user.Email)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return token, user, nil
+}
+
 func (s *AuthService) LoginWithGoogle(code string) (string, error) {
 	oauthConfig := utils.GetGoogleOAuthConfig()
 

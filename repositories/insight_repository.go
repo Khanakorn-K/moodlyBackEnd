@@ -15,36 +15,24 @@ func NewInsightRepository(db *gorm.DB) *InsightRepository {
 	return &InsightRepository{db: db}
 }
 
-func (r *InsightRepository) FindMoodLogs(
+func (r *InsightRepository) FindInsightLogs(
 	userID uint,
-	mood *int,
-	startDate *time.Time,
-	endDate *time.Time,
-) ([]models.MoodLog, int64, error) {
+	selectedDate *time.Time,
+) ([]models.MoodLog, error) {
 	var moodLogs []models.MoodLog
-	var total int64
 
 	query := r.db.Where("user_id = ?", userID)
 
-	if mood != nil {
-		query = query.Where("mood = ?", *mood)
+	if selectedDate != nil {
+		startDate := *selectedDate
+		endDate := startDate.AddDate(0, 0, 1)
+
+		query = query.Where("created_at >= ? AND created_at < ?", startDate, endDate)
 	}
 
-	if startDate != nil {
-		query = query.Where("created_at >= ?", *startDate)
+	if err := query.Find(&moodLogs).Error; err != nil {
+		return nil, err
 	}
 
-	if endDate != nil {
-		query = query.Where("created_at < ?", endDate.AddDate(0, 0, 1))
-	}
-
-	if err := query.Model(&models.MoodLog{}).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	if err := query.Order("created_at DESC").Find(&moodLogs).Error; err != nil {
-		return nil, 0, err
-	}
-
-	return moodLogs, total, nil
+	return moodLogs, nil
 }

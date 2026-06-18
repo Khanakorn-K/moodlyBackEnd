@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
 	models "moodly/Models"
 	"moodly/repositories"
@@ -8,6 +9,8 @@ import (
 	"strings"
 	"time"
 )
+
+var ErrInvalidDateFormat = errors.New("invalid date format")
 
 type InsightService struct {
 	repo *repositories.InsightRepository
@@ -17,79 +20,106 @@ func NewInsightService(repo *repositories.InsightRepository) *InsightService {
 	return &InsightService{repo: repo}
 }
 
-type MoodLogsResult struct {
-	Data  []models.MoodLog `json:"data"`
-	Total int64            `json:"total"`
-	Page  int              `json:"page"`
+type InsightResult struct {
+	TotalLogs        int                       `json:"totalLogs"`
+	AverageMood      float64                   `json:"averageMood"`
+	MoodDistribution map[string]int            `json:"moodDistribution"`
+	CausesAnalysis   map[string]map[string]int `json:"causesAnalysis"`
 }
 
-func (s *InsightService) FindMoodLogs(
-	userID uint,
-	mood string,
-	startDate string,
-	endDate string,
-) (*MoodLogsResult, error) {
+func (s *InsightService) GetInsights(userID uint, selectedDate string) (*InsightResult, error) {
 	if userID == 0 {
 		return nil, errors.New("user id is required")
 	}
 
-	mood = strings.TrimSpace(mood)
-	startDate = strings.TrimSpace(startDate)
-	endDate = strings.TrimSpace(endDate)
+	selectedDate = strings.TrimSpace(selectedDate)
 
-	moodFilter, err := parseOptionalMood(mood)
+	var selectedDateFilter *time.Time
+
+	if selectedDate != "" {
+		parsedDate, err := time.Parse("2006-01-02", selectedDate)
+		if err != nil {
+			return nil, ErrInvalidDateFormat
+		}
+
+		selectedDateFilter = &parsedDate
+	}
+
+	logs, err := s.repo.FindInsightLogs(userID, selectedDateFilter)
 	if err != nil {
 		return nil, err
 	}
 
-	startDateFilter, err := parseOptionalDate(startDate)
-	if err != nil {
-		return nil, err
-	}
-
-	endDateFilter, err := parseOptionalDate(endDate)
-	if err != nil {
-		return nil, err
-	}
-
-	if startDateFilter != nil && endDateFilter != nil && startDateFilter.After(*endDateFilter) {
-		return nil, errors.New("invalid date range")
-	}
-
-	logs, total, err := s.repo.FindMoodLogs(userID, moodFilter, startDateFilter, endDateFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	return &MoodLogsResult{
-		Data:  logs,
-		Total: total,
-		Page:  1,
+	return &InsightResult{
+		TotalLogs:        len(logs),
+		AverageMood:      calculateAverageMood(logs),
+		MoodDistribution: calculateMoodDistributionRecord(logs),
+		CausesAnalysis:   calculateCauseAnalysis(logs),
 	}, nil
 }
 
-func parseOptionalMood(value string) (*int, error) {
-	if value == "" {
-		return nil, nil
+func calculateMoodDistributionRecord(logs []models.MoodLog) map[string]int {
+	result := map[string]int{}
+
+	for _, log := range logs {
+		moodKey := strconv.Itoa(log.Mood)
+		result[moodKey]++
 	}
 
-	mood, err := strconv.Atoi(value)
-	if err != nil || mood < 1 || mood > 5 {
-		return nil, errors.New("mood must be between 1 and 5")
-	}
-
-	return &mood, nil
+	return result
 }
 
-func parseOptionalDate(value string) (*time.Time, error) {
-	if value == "" {
-		return nil, nil
+func calculateCauseAnalysis(logs []models.MoodLog) map[string]map[string]int {
+	result := map[string]map[string]int{}
+
+	for _, log := range logs {
+		causes := parseCauses(log.Causes)
+		moodKey := strconv.Itoa(log.Mood)
+
+		for _, cause := range causes {
+			cause = strings.TrimSpace(cause)
+			if cause == "" {
+				continue
+			}
+
+			if result[cause] == nil {
+				result[cause] = map[string]int{}
+			}
+
+			result[cause][moodKey]++
+		}
 	}
 
-	parsedDate, err := time.Parse("2006-01-02", value)
-	if err != nil {
-		return nil, errors.New("invalid date format")
+	return result
+}
+
+func parseCauses(rawCauses string) []string {
+	rawCauses = strings.TrimSpace(rawCauses)
+
+	if rawCauses == "" {
+		return []string{}
 	}
 
-	return &parsedDate, nil
+	var causes []string
+
+	// กรณีเก็บเป็น JSON string เช่น ["work","money"]
+	if err := json.Unmarshal([]byte(rawCauses), &causes); err == nil {
+		return causes
+	}
+
+	// กรณีเก็บเป็น string ธรรมดา เช่น work,money
+	parts := strings.Split(rawCauses, ",")
+
+	cleanCauses := []string{}
+
+	for _, part := range parts {
+		cause := strings.TrimSpace(part)
+		cause = strings.Trim(cause, `"'[]{} `)
+
+		if cause != "" {
+			cleanCauses = append(cleanCauses, cause)
+		}
+	}
+
+	return cleanCauses
 }

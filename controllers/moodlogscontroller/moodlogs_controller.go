@@ -103,7 +103,7 @@ func (mc *MoodLogsController) UpdateMoodLog(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "mood log updated",
-		"mood_log": moodLog,
+		"mood_log": &moodLog,
 	})
 }
 
