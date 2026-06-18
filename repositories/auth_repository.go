@@ -30,47 +30,6 @@ func (r *AuthRepository) CreateUser(user *models.User) error {
 	return r.db.Create(user).Error
 }
 
-func (r *AuthRepository) Login(email string, password string) (*models.User, error) {
-	user, err := r.FindByEmail(email)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
-func (r *AuthRepository) FindOAuthAccount(provider string, providerAccountID string) (*models.OAuthAccount, error) {
-	var account models.OAuthAccount
-
-	err := r.db.Where(
-		"provider = ? AND provider_account_id = ?",
-		provider,
-		providerAccountID,
-	).First(&account).Error
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &account, nil
-}
-
-func (r *AuthRepository) FindOAuthAccountWithUser(provider string, providerAccountID string) (*models.OAuthAccount, error) {
-	var account models.OAuthAccount
-
-	err := r.db.
-		Preload("User").
-		Where("provider = ? AND provider_account_id = ?", provider, providerAccountID).
-		First(&account).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return &account, nil
-}
-
-func (r *AuthRepository) CreateOAuthAccount(account *models.OAuthAccount) error {
-	return r.db.Create(account).Error
-}
 func (r *AuthRepository) FindOrCreateOAuthAccount(
 	userID uint,
 	provider string,
@@ -84,7 +43,7 @@ func (r *AuthRepository) FindOrCreateOAuthAccount(
 
 	if err == nil {
 		if account.UserID != userID {
-			return nil, err
+			return nil, errors.New("oauth account already linked to another user")
 		}
 
 		return &account, nil
