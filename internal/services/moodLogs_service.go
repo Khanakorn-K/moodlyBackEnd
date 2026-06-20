@@ -3,16 +3,16 @@ package services
 import (
 	"errors"
 	"moodly/internal/domain/entities"
-	repositoriesimpl "moodly/internal/repositoriesImpl"
+	"moodly/internal/domain/repositories"
 	"strings"
 	"time"
 )
 
 type MoodLogsService struct {
-	repo *repositoriesimpl.MoodLogRepository
+	repo repositories.MoodLogRepositoryInterface
 }
 
-func NewMoodLogsService(repo *repositoriesimpl.MoodLogRepository) *MoodLogsService {
+func NewMoodLogsService(repo repositories.MoodLogRepositoryInterface) *MoodLogsService {
 	return &MoodLogsService{repo: repo}
 }
 

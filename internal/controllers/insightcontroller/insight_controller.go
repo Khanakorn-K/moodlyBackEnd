@@ -1,9 +1,10 @@
-package controllers
+package insightcontroller
 
 import (
 	"errors"
 	"moodly/internal/services"
 	"moodly/pkg"
+	"moodly/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -51,6 +52,11 @@ func (ic *InsightController) GetInsights(c *gin.Context) {
 		)
 		return
 	}
-
-	pkg.CreateAPIResponse(c, http.StatusOK, result)
+	mapperResult := &InsightResultResponse{
+		TotalLogs:        len(*result),
+		AverageMood:      utils.CalculateAverageMood(*result),
+		MoodDistribution: utils.CalculateMoodDistributionRecord(*result),
+		CausesAnalysis:   utils.CalculateCauseAnalysis(*result),
+	}
+	pkg.CreateAPIResponse(c, http.StatusOK, mapperResult)
 }

@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 	"moodly/internal/domain/entities"
-	repositoriesimpl "moodly/internal/repositoriesImpl"
+	"moodly/internal/domain/repositories"
 	"moodly/utils"
 	"strings"
 
@@ -12,10 +12,10 @@ import (
 )
 
 type AuthService struct {
-	repo *repositoriesimpl.AuthRepository
+	repo repositories.AuthRepositoryInterface
 }
 
-func NewAuthService(repo *repositoriesimpl.AuthRepository) *AuthService {
+func NewAuthService(repo repositories.AuthRepositoryInterface) *AuthService {
 	return &AuthService{repo: repo}
 }
 

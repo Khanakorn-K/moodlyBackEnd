@@ -3,6 +3,7 @@ package repositoriesImpl
 import (
 	"errors"
 	"moodly/internal/domain/entities"
+	"moodly/internal/domain/repositories"
 	"time"
 
 	"gorm.io/gorm"
@@ -12,7 +13,7 @@ type MoodLogRepository struct {
 	db *gorm.DB
 }
 
-func NewMoodLogsRepository(db *gorm.DB) *MoodLogRepository {
+func NewMoodLogsRepository(db *gorm.DB) repositories.MoodLogRepositoryInterface {
 	return &MoodLogRepository{db: db}
 }
 

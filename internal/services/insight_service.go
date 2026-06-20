@@ -2,8 +2,8 @@ package services
 
 import (
 	"errors"
-	"moodly/internal/repositoriesImpl"
-	"moodly/utils"
+	"moodly/internal/domain/entities"
+	"moodly/internal/domain/repositories"
 	"strings"
 	"time"
 )
@@ -11,21 +11,14 @@ import (
 var ErrInvalidDateFormat = errors.New("invalid date format")
 
 type InsightService struct {
-	repo *repositoriesImpl.InsightRepository
+	repo repositories.InsightRepositoryInterface
 }
 
-func NewInsightService(repo *repositoriesImpl.InsightRepository) *InsightService {
+func NewInsightService(repo repositories.InsightRepositoryInterface) *InsightService {
 	return &InsightService{repo: repo}
 }
 
-type InsightResult struct {
-	TotalLogs        int                       `json:"totalLogs"`
-	AverageMood      float64                   `json:"averageMood"`
-	MoodDistribution map[string]int            `json:"moodDistribution"`
-	CausesAnalysis   map[string]map[string]int `json:"causesAnalysis"`
-}
-
-func (s *InsightService) GetInsights(userID uint, selectedDate string) (*InsightResult, error) {
+func (s *InsightService) GetInsights(userID uint, selectedDate string) (*[]entities.MoodLogEntity, error) {
 	if userID == 0 {
 		return nil, errors.New("user id is required")
 	}
@@ -48,10 +41,5 @@ func (s *InsightService) GetInsights(userID uint, selectedDate string) (*Insight
 		return nil, err
 	}
 
-	return &InsightResult{
-		TotalLogs:        len(logs),
-		AverageMood:      utils.CalculateAverageMood(logs),
-		MoodDistribution: utils.CalculateMoodDistributionRecord(logs),
-		CausesAnalysis:   utils.CalculateCauseAnalysis(logs),
-	}, nil
+	return &logs, nil
 }

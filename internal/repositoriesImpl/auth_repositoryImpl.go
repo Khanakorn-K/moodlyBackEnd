@@ -3,19 +3,20 @@ package repositoriesImpl
 import (
 	"errors"
 	"moodly/internal/domain/entities"
+	"moodly/internal/domain/repositories"
 
 	"gorm.io/gorm"
 )
 
-type AuthRepository struct {
+type AuthRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewAuthRepository(db *gorm.DB) *AuthRepository {
-	return &AuthRepository{db: db}
+func NewAuthRepositoryImpl(db *gorm.DB) repositories.AuthRepositoryInterface {
+	return &AuthRepositoryImpl{db: db}
 }
 
-func (r *AuthRepository) FindByEmail(email string) (*entities.UserEntity, error) {
+func (r *AuthRepositoryImpl) FindByEmail(email string) (*entities.UserEntity, error) {
 	var user entities.UserEntity
 
 	err := r.db.Where("email = ?", email).First(&user).Error
@@ -26,11 +27,11 @@ func (r *AuthRepository) FindByEmail(email string) (*entities.UserEntity, error)
 	return &user, nil
 }
 
-func (r *AuthRepository) CreateUser(user *entities.UserEntity) error {
+func (r *AuthRepositoryImpl) CreateUser(user *entities.UserEntity) error {
 	return r.db.Create(user).Error
 }
 
-func (r *AuthRepository) FindOrCreateOAuthAccount(
+func (r *AuthRepositoryImpl) FindOrCreateOAuthAccount(
 	userID uint,
 	provider string,
 	providerAccountID string,

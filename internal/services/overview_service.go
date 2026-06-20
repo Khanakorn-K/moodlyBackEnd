@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 	"moodly/internal/domain/entities"
-	"moodly/internal/repositoriesImpl"
+	"moodly/internal/domain/repositories"
 	"moodly/utils"
 	"sort"
 	"strings"
@@ -11,10 +11,10 @@ import (
 )
 
 type OverviewService struct {
-	repo *repositoriesImpl.OverviewRepository
+	repo repositories.OverviewRepositoryInterface
 }
 
-func NewOverviewService(repo *repositoriesImpl.OverviewRepository) *OverviewService {
+func NewOverviewService(repo repositories.OverviewRepositoryInterface) *OverviewService {
 	return &OverviewService{repo: repo}
 }
 

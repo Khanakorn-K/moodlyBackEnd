@@ -3,15 +3,15 @@ package services
 import (
 	"errors"
 	"moodly/internal/domain/entities"
-	repositoriesimpl "moodly/internal/repositoriesImpl"
+	"moodly/internal/domain/repositories"
 	"strings"
 )
 
 type CustomCauseService struct {
-	repo *repositoriesimpl.CustomCauseRepository
+	repo repositories.CustomCauseRepositoryInterface
 }
 
-func NewCustomCauseService(repo *repositoriesimpl.CustomCauseRepository) *CustomCauseService {
+func NewCustomCauseService(repo repositories.CustomCauseRepositoryInterface) *CustomCauseService {
 	return &CustomCauseService{repo: repo}
 }
 
@@ -29,7 +29,7 @@ func (s *CustomCauseService) CreateCause(cause *entities.CustomCauseEntity) erro
 	return s.repo.Create(cause)
 }
 
-func (s *CustomCauseService) GetCauses(userID uint) ([]entities.CustomCauseEntity, error) {
+func (s *CustomCauseService) GetCauses(userID uint) (*[]entities.CustomCauseEntity, error) {
 	if userID == 0 {
 		return nil, errors.New("user id is required")
 	}

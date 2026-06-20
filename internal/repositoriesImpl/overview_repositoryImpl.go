@@ -2,20 +2,21 @@ package repositoriesImpl
 
 import (
 	"moodly/internal/domain/entities"
+	"moodly/internal/domain/repositories"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-type OverviewRepository struct {
+type OverviewRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewOverviewRepository(db *gorm.DB) *OverviewRepository {
-	return &OverviewRepository{db: db}
+func NewOverviewRepositoryImpl(db *gorm.DB) repositories.OverviewRepositoryInterface {
+	return &OverviewRepositoryImpl{db: db}
 }
 
-func (r *OverviewRepository) FindMoodLogsByDateRange(
+func (r *OverviewRepositoryImpl) FindMoodLogsByDateRange(
 	userID uint,
 	startDate time.Time,
 	endDate time.Time,

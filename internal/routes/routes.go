@@ -2,9 +2,9 @@ package routes
 
 import (
 	"moodly/config/initializers"
-	"moodly/internal/controllers"
 	"moodly/internal/controllers/authcontroller"
 	"moodly/internal/controllers/customercontroller"
+	"moodly/internal/controllers/insightcontroller"
 	"moodly/internal/controllers/moodlogscontroller"
 	"moodly/internal/controllers/overviewcontroller"
 	"moodly/internal/middlewares"
@@ -23,7 +23,7 @@ func RegisterRoutes(r *gin.Engine) {
 }
 
 func registerAuthRoutes(r *gin.Engine) {
-	authRepo := repositoriesImpl.NewAuthRepository(initializers.DB)
+	authRepo := repositoriesImpl.NewAuthRepositoryImpl(initializers.DB)
 	authService := services.NewAuthService(authRepo)
 	authController := authcontroller.NewAuthController(authService)
 
@@ -55,7 +55,7 @@ func registerMoodLogsRoutes(r *gin.Engine) {
 }
 
 func registerCustomCauseRoutes(r *gin.Engine) {
-	customCauseRepo := repositoriesImpl.NewCustomCauseRepository(initializers.DB)
+	customCauseRepo := repositoriesImpl.NewCustomCauseRepositoryImpl(initializers.DB)
 	customCauseService := services.NewCustomCauseService(customCauseRepo)
 	customCauseController := customercontroller.NewCustomCauseController(customCauseService)
 
@@ -69,9 +69,9 @@ func registerCustomCauseRoutes(r *gin.Engine) {
 }
 
 func registerInsightRoutes(r *gin.Engine) {
-	insightRepo := repositoriesImpl.NewInsightRepository(initializers.DB)
+	insightRepo := repositoriesImpl.NewInsightRepositoryImpl(initializers.DB)
 	insightService := services.NewInsightService(insightRepo)
-	insightController := controllers.NewInsightController(insightService)
+	insightController := insightcontroller.NewInsightController(insightService)
 
 	insight := r.Group("/insights")
 	insight.Use(middlewares.AuthMiddleware())
@@ -80,7 +80,7 @@ func registerInsightRoutes(r *gin.Engine) {
 }
 
 func registerOverviewRoutes(r *gin.Engine) {
-	overviewRepo := repositoriesImpl.NewOverviewRepository(initializers.DB)
+	overviewRepo := repositoriesImpl.NewOverviewRepositoryImpl(initializers.DB)
 	overviewService := services.NewOverviewService(overviewRepo)
 	overviewController := overviewcontroller.NewOverviewController(overviewService)
 

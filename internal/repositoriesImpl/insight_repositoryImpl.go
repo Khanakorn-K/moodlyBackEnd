@@ -2,20 +2,21 @@ package repositoriesImpl
 
 import (
 	"moodly/internal/domain/entities"
+	"moodly/internal/domain/repositories"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-type InsightRepository struct {
+type InsightRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewInsightRepository(db *gorm.DB) *InsightRepository {
-	return &InsightRepository{db: db}
+func NewInsightRepositoryImpl(db *gorm.DB) repositories.InsightRepositoryInterface {
+	return &InsightRepositoryImpl{db: db}
 }
 
-func (r *InsightRepository) FindInsightLogs(
+func (r *InsightRepositoryImpl) FindInsightLogs(
 	userID uint,
 	selectedDate *time.Time,
 ) ([]entities.MoodLogEntity, error) {
