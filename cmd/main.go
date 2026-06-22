@@ -3,9 +3,6 @@
 // @description Moodly Backend API
 // @host localhost:8080
 // @BasePath /
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
 
 package main
 
@@ -17,9 +14,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func init() {
@@ -49,11 +43,6 @@ func main() {
 		},
 		AllowCredentials: true,
 	}))
-
-	r.GET(
-		"/swagger/*any",
-		ginSwagger.WrapHandler(swaggerFiles.Handler),
-	)
 
 	routes.RegisterRoutes(r)
 
