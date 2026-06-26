@@ -8,6 +8,7 @@ package main
 
 import (
 	_ "moodly/docs"
+	"os"
 
 	"moodly/config/initializers"
 	"moodly/internal/routes"
@@ -19,6 +20,7 @@ import (
 func init() {
 	initializers.LoadEnvVariables()
 	initializers.ConnectDB()
+	initializers.ConnectKafka(os.Getenv("KAFKA_ADDR"), "moodlyTP")
 }
 
 func main() {
