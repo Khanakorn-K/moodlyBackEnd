@@ -15,6 +15,6 @@ check:
 
 swagerinit:
 	swag init -g cmd/main.go --parseDependency --parseInternal
- 
+
 dockerbuildimage:
 	docker build -t moodlyimage -f Docker/dockerfile .
