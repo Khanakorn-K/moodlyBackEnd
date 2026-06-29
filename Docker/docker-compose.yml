@@ -40,8 +40,8 @@ services:
       - moodly_net
 
   app:
-    image: ghcr.io/khanakorn-k/moodlybackend:latest
-    container_name: moodly_backend
+    image: ghcr.io/khanakorn-k/moodlybackend:${IMAGE_TAG:-latest}
+    container_name: moodly-app
     depends_on:
       - postgres
       - redis

@@ -69,24 +69,40 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ubuntu
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          envs: IMAGE_TAG,GITHUB_ACTOR,GITHUB_TOKEN,DATABASE_URL,JWT_SECRET,POSTGRES_PASSWORD,REDIS_PASSWORD
           script: |
             set -e
 
-            # clone ครั้งแรก ถ้ายังไม่มี
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
             if [ ! -d ~/moodly ]; then
               git clone https://github.com/Khanakorn-K/moodlybackend.git ~/moodly
             fi
 
-            # pull โค้ดล่าสุด
             cd ~/moodly
             git pull --rebase origin main
 
-            # login GHCR เพื่อ pull private image
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            # pull image ใหม่ + restart ทุก service
             cd ~/moodly/Docker
-            docker compose pull
+            IMAGE_TAG=$IMAGE_TAG \
+            DATABASE_URL=$DATABASE_URL \
+            JWT_SECRET=$JWT_SECRET \
+            POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+            REDIS_PASSWORD=$REDIS_PASSWORD \
+            docker compose pull app
+
+            IMAGE_TAG=$IMAGE_TAG \
+            DATABASE_URL=$DATABASE_URL \
+            JWT_SECRET=$JWT_SECRET \
+            POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+            REDIS_PASSWORD=$REDIS_PASSWORD \
             docker compose up -d --remove-orphans
 
             docker image prune -f
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
