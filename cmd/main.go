@@ -28,7 +28,7 @@ func main() {
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"http://54.251.189.159:8080",
+			os.Getenv("URL_SERVER"),
 		},
 		AllowMethods: []string{
 			"GET",

@@ -52,7 +52,6 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_ADDR: ${KAFKA_ADDR}
-      ALLOW_ORIGINS: ${ALLOW_ORIGINS}
     restart: unless-stopped
     networks:
       - moodly_net
