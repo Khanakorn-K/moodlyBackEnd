@@ -63,42 +63,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set IMAGE lowercase
-        run: echo "IMAGE=ghcr.io/${IMAGE_NAME,,}" >> $GITHUB_ENV
-
       - name: Deploy to Lightsail
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ubuntu
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          envs: IMAGE,DATABASE_URL,JWT_SECRET
           script: |
             set -e
 
-            docker pull $IMAGE:latest
+            # clone ครั้งแรก ถ้ายังไม่มี
+            if [ ! -d ~/moodly ]; then
+              git clone https://github.com/Khanakorn-K/moodlybackend.git ~/moodly
+            fi
 
-            # สร้าง network ถ้ายังไม่มี
-            docker network create moodly_net || true
+            # pull โค้ดล่าสุด
+            cd ~/moodly
+            git pull --rebase origin main
 
-            # connect dependency containers เข้า network
-            docker network connect moodly_net moodlydb || true
-            docker network connect moodly_net redis_server || true
-            docker network connect moodly_net moodly-kafka || true
+            # login GHCR เพื่อ pull private image
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            docker stop moodly_backend || true
-            docker rm moodly_backend || true
-
-            docker run -d \
-              --name moodly_backend \
-              --restart unless-stopped \
-              --network moodly_net \
-              -p 8080:8080 \
-              -e DATABASE_URL=$DATABASE_URL \
-              -e JWT_SECRET=$JWT_SECRET \
-              $IMAGE:latest
+            # pull image ใหม่ + restart ทุก service
+            cd ~/moodly/Docker
+            docker compose pull
+            docker compose up -d --remove-orphans
 
             docker image prune -f
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
