@@ -1,0 +1,104 @@
+name: Moodly CI/CD
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Test
+        run: go test ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+  build-image:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set IMAGE name lowercase
+        run: echo "IMAGE=${REGISTRY}/${IMAGE_NAME,,}" >> $GITHUB_ENV
+
+      - name: Build & Push Docker Image
+        run: |
+          docker build \
+            -t $IMAGE:latest \
+            -t $IMAGE:${{ github.sha }} \
+            -f Docker/dockerfile .
+
+          docker push $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }}
+
+  deploy:
+    needs: build-image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set IMAGE lowercase
+        run: echo "IMAGE=ghcr.io/${IMAGE_NAME,,}" >> $GITHUB_ENV
+
+      - name: Deploy to Lightsail
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ubuntu
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          envs: IMAGE,DATABASE_URL,JWT_SECRET
+          script: |
+            set -e
+
+            docker pull $IMAGE:latest
+
+            # สร้าง network ถ้ายังไม่มี
+            docker network create moodly_net || true
+
+            # connect dependency containers เข้า network
+            docker network connect moodly_net moodlydb || true
+            docker network connect moodly_net redis_server || true
+            docker network connect moodly_net moodly-kafka || true
+
+            docker stop moodly_backend || true
+            docker rm moodly_backend || true
+
+            docker run -d \
+              --name moodly_backend \
+              --restart unless-stopped \
+              --network moodly_net \
+              -p 8080:8080 \
+              -e DATABASE_URL=$DATABASE_URL \
+              -e JWT_SECRET=$JWT_SECRET \
+              $IMAGE:latest
+
+            docker image prune -f
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
