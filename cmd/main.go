@@ -1,7 +1,7 @@
 // @title Moodly API
 // @version 1.0
 // @description Moodly Backend API
-// @host localhost:8080
+// @host 54.251.189.159:8080 // ถ้า เปิดปิด instance อย่าลืมมาแก้
 // @BasePath /
 
 package main
@@ -28,7 +28,7 @@ func main() {
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
-			"http://localhost:3000",
+			"http://54.251.189.159:8080",
 		},
 		AllowMethods: []string{
 			"GET",
@@ -45,7 +45,6 @@ func main() {
 		},
 		AllowCredentials: true,
 	}))
-
 	routes.RegisterRoutes(r)
 
 	if err := r.Run(":8080"); err != nil {
