@@ -122,3 +122,19 @@ jobs:
             docker run --rm --network $DB_NETWORK -v ~/moodly:/app -w /app -e DATABASE_URL=$DATABASE_URL golang:1.26 go run config/migrate/migrate.go
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  swaggerinit:
+    needs: migrate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Swag
+        run: go install github.com/swaggo/gin-swagger
+
+      - name: Generate Swagger Docs
+        run: swag init -g cmd/main.go --parseDependency --parseInternal
+        # -g คือการระบุที่อยู่ไฟล์ main.go ของคุณ (แก้ path ให้ตรงกับโปรเจกต์จริงถ้าไม่ใช่ cmd/main.go)
+
+      - name: Auto Commit Swagger Docs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-generate swagger docs"
+          file_pattern: docs/*

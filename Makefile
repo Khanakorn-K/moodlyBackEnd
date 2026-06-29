@@ -13,7 +13,7 @@ check:
 	go test cmd/main.go
 	rm -f main
 
-swagerinit:
+swagerinitgenerate:
 	swag init -g cmd/main.go --parseDependency --parseInternal
 
 dockerbuildimage:
