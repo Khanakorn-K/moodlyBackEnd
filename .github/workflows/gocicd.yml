@@ -94,10 +94,6 @@ jobs:
 
             docker compose pull app
             docker compose up -d --remove-orphans
-
-            DB_NETWORK=$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}' moodlydb)
-            docker run --rm --network $DB_NETWORK -v ~/moodly:/app -w /app -e DATABASE_URL=$DATABASE_URL golang:1.26 go run config/migrate/migrate.go
-
             docker image prune -f
         env:
           IMAGE_TAG: ${{ github.sha }}
@@ -107,3 +103,22 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+
+  migrate:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Database Migration on Lightsail
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ubuntu
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          envs: DATABASE_URL
+          script: |
+            set -e
+            cd ~/moodly
+            DB_NETWORK=$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}' moodlydb)
+            docker run --rm --network $DB_NETWORK -v ~/moodly:/app -w /app -e DATABASE_URL=$DATABASE_URL golang:1.26 go run config/migrate/migrate.go
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
