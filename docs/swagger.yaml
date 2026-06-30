@@ -175,7 +175,7 @@ definitions:
       totalLogs:
         type: integer
     type: object
-host: '13.229.240.129:8080 // # อย่่าลืมกลับมาแก้ถ้าเปิดปิด instance'
+host: 13.229.240.129:8080
 info:
   contact: {}
   description: Moodly Backend API
@@ -640,4 +640,9 @@ paths:
       summary: Get Overview
       tags:
       - Overview
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

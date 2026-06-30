@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "13.229.240.129:8080 // # อย่่าลืมกลับมาแก้ถ้าเปิดปิด instance",
+    "host": "13.229.240.129:8080",
     "basePath": "/",
     "paths": {
         "/auth/login": {
@@ -976,6 +976,13 @@
                     "type": "integer"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

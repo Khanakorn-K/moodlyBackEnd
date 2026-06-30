@@ -4,6 +4,10 @@
 // @host 13.229.240.129:8080
 // @BasePath /
 
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 package main
 
 import (
