@@ -989,7 +989,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "13.229.240.129:8080 // # อย่่าลืมกลับมาแก้ถ้าเปิดปิด instance",
+	Host:             "13.229.240.129:8080",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Moodly API",

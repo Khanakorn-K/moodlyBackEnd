@@ -52,6 +52,8 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_ADDR: ${KAFKA_ADDR}
+      URL_SERVER: ${URL_SERVER}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     restart: unless-stopped
     networks:
       - moodly_net
