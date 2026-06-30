@@ -2,10 +2,11 @@ name: Moodly CI/CD
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 env:
@@ -15,12 +16,18 @@ env:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
           go-version: "1.26"
+          cache: true
+
+      - name: Download Modules
+        run: |
+          go mod download || go mod download
 
       - name: Test
         run: go test ./...
@@ -45,56 +52,63 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set IMAGE name lowercase
+      - name: Set image name
         run: echo "IMAGE=${REGISTRY}/${IMAGE_NAME,,}" >> $GITHUB_ENV
 
-      - name: Build & Push Docker Image
+      - name: Build image
         run: |
           docker build \
             -t $IMAGE:latest \
             -t $IMAGE:${{ github.sha }} \
             -f Docker/dockerfile .
 
-          docker push $IMAGE:latest
-          docker push $IMAGE:${{ github.sha }}
+      - name: Push latest
+        run: docker push $IMAGE:latest
+
+      - name: Push sha
+        run: docker push $IMAGE:${{ github.sha }}
 
   deploy:
     needs: build-image
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to Lightsail
+      - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ubuntu
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          envs: IMAGE_TAG,GITHUB_ACTOR,GITHUB_TOKEN,DATABASE_URL,JWT_SECRET,POSTGRES_PASSWORD,REDIS_PASSWORD
+          envs: IMAGE_TAG,GITHUB_ACTOR,GITHUB_TOKEN,DATABASE_URL,JWT_SECRET,POSTGRES_PASSWORD,REDIS_PASSWORD,URL_SERVER
           script: |
             set -e
 
-            echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
             if [ ! -d ~/moodly ]; then
               git clone https://github.com/Khanakorn-K/moodlybackend.git ~/moodly
             fi
 
             cd ~/moodly
-            git pull --rebase origin main
+            git fetch origin
+            git reset --hard origin/main
 
-            cd ~/moodly/Docker
+            cd Docker
 
-            cat <<EOF > .env
+            cat > .env <<EOF
             IMAGE_TAG=$IMAGE_TAG
             DATABASE_URL=$DATABASE_URL
             JWT_SECRET=$JWT_SECRET
             POSTGRES_PASSWORD=$POSTGRES_PASSWORD
             REDIS_PASSWORD=$REDIS_PASSWORD
+            URL_SERVER=$URL_SERVER
             EOF
 
             docker compose pull app
             docker compose up -d --remove-orphans
-            docker image prune -f
+
+            docker image prune -af
+
         env:
           IMAGE_TAG: ${{ github.sha }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -103,13 +117,14 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          URL_SERVER: ${{ secrets.URL_SERVER }}
 
   migrate:
     needs: deploy
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run Database Migration on Lightsail
+      - name: Run Migration
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.LIGHTSAIL_HOST }}
@@ -127,25 +142,3 @@ jobs:
               go run config/migrate/migrate.go
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-  swaggerinit:
-    needs: migrate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.26"
-
-      - name: Install Swag
-        run: go install github.com/swaggo/swag/cmd/swag@latest
-
-      - name: Generate Swagger Docs
-        run: swag init -g cmd/main.go --parseDependency --parseInternal
-
-      - name: Auto Commit Swagger Docs
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "docs: auto-generate swagger docs"
-          file_pattern: docs/*
