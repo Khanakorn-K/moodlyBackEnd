@@ -107,6 +107,7 @@ jobs:
   migrate:
     needs: deploy
     runs-on: ubuntu-latest
+
     steps:
       - name: Run Database Migration on Lightsail
         uses: appleboy/ssh-action@v1.2.0
@@ -117,9 +118,13 @@ jobs:
           envs: DATABASE_URL
           script: |
             set -e
-            cd ~/moodly
+
             DB_NETWORK=$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}' moodlydb)
-            docker run --rm --network $DB_NETWORK -v ~/moodly:/app -w /app -e DATABASE_URL=$DATABASE_URL golang:1.26 go run config/migrate/migrate.go
+
+            docker compose -f ~/moodly/Docker/docker-compose.yml run --rm \
+              -e DATABASE_URL=$DATABASE_URL \
+              app \
+              go run config/migrate/migrate.go
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
