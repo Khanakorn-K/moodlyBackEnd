@@ -25,9 +25,8 @@ jobs:
           go-version: "1.26"
           cache: true
 
-      - name: Download Modules
-        run: |
-          go mod download || go mod download
+      - name: Download modules
+        run: go mod download
 
       - name: Test
         run: go test ./...
@@ -52,21 +51,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set image name
+      - name: Set image
         run: echo "IMAGE=${REGISTRY}/${IMAGE_NAME,,}" >> $GITHUB_ENV
 
-      - name: Build image
+      - name: Build
         run: |
           docker build \
             -t $IMAGE:latest \
             -t $IMAGE:${{ github.sha }} \
             -f Docker/dockerfile .
 
-      - name: Push latest
-        run: docker push $IMAGE:latest
-
-      - name: Push sha
-        run: docker push $IMAGE:${{ github.sha }}
+      - name: Push
+        run: |
+          docker push $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }}
 
   deploy:
     needs: build-image
@@ -75,11 +73,23 @@ jobs:
     steps:
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          URL_SERVER: ${{ secrets.URL_SERVER }}
+          KAFKA_ADDR: ${{ secrets.KAFKA_ADDR }}
+
         with:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ubuntu
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          envs: IMAGE_TAG,GITHUB_ACTOR,GITHUB_TOKEN,DATABASE_URL,JWT_SECRET,POSTGRES_PASSWORD,REDIS_PASSWORD,URL_SERVER
+          envs: IMAGE_TAG,GITHUB_ACTOR,GITHUB_TOKEN,DATABASE_URL,JWT_SECRET,POSTGRES_PASSWORD,REDIS_PASSWORD,URL_SERVER,KAFKA_ADDR
+
           script: |
             set -e
 
@@ -102,43 +112,19 @@ jobs:
             POSTGRES_PASSWORD=$POSTGRES_PASSWORD
             REDIS_PASSWORD=$REDIS_PASSWORD
             URL_SERVER=$URL_SERVER
+            KAFKA_ADDR=$KAFKA_ADDR
             EOF
 
-            docker compose pull app
-            docker compose up -d --remove-orphans
+            docker compose pull
+
+            docker compose up -d
+
+            until docker compose exec -T postgres pg_isready -U postgres
+            do
+                sleep 2
+            done
+
+            docker compose exec -T app \
+            go run config/migrate/migrate.go
 
             docker image prune -af
-
-        env:
-          IMAGE_TAG: ${{ github.sha }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          URL_SERVER: ${{ secrets.URL_SERVER }}
-
-  migrate:
-    needs: deploy
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Run Migration
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.LIGHTSAIL_HOST }}
-          username: ubuntu
-          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          envs: DATABASE_URL
-          script: |
-            set -e
-
-            DB_NETWORK=$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}' moodlydb)
-
-            docker compose -f ~/moodly/Docker/docker-compose.yml run --rm \
-              -e DATABASE_URL=$DATABASE_URL \
-              app \
-              go run config/migrate/migrate.go
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}

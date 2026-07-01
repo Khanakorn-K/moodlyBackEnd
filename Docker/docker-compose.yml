@@ -1,32 +1,45 @@
-name: moodly
-
 services:
   postgres:
     image: postgres:17
     container_name: moodlydb
+
     environment:
       POSTGRES_DB: moodlydb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
     restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d moodlydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
     networks:
       - moodly_net
 
   redis:
     image: redis:7.4-alpine
     container_name: redis_server
+
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+
     volumes:
       - redis_data:/data
+
     restart: unless-stopped
+
     networks:
       - moodly_net
 
   kafka:
     image: apache/kafka:latest
     container_name: moodly-kafka
+
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -35,26 +48,36 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@moodly-kafka:9093
+
     restart: unless-stopped
+
     networks:
       - moodly_net
 
   app:
     image: ghcr.io/khanakorn-k/moodlybackend:${IMAGE_TAG:-latest}
     container_name: moodly-app
+
     depends_on:
-      - postgres
-      - redis
-      - kafka
-    ports:
-      - "8080:8080"
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
-      KAFKA_ADDR: ${KAFKA_ADDR}
-      URL_SERVER: ${URL_SERVER}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      URL_SERVER: ${URL_SERVER}
+      KAFKA_ADDR: ${KAFKA_ADDR}
+
+    ports:
+      - "8080:8080"
+
     restart: unless-stopped
+
     networks:
       - moodly_net
 
