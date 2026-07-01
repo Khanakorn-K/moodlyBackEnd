@@ -5,6 +5,7 @@ migrate:
 # start server
 
 run:
+	swag init -g cmd/main.go --parseDependency --parseInternal
 	go run cmd/main.go
 
 check:
