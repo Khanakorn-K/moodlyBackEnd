@@ -175,7 +175,7 @@ definitions:
       totalLogs:
         type: integer
     type: object
-host: 13.229.240.129:8080
+host: 13.250.43.50:8080
 info:
   contact: {}
   description: Moodly Backend API

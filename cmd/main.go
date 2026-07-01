@@ -1,7 +1,7 @@
 // @title Moodly API
 // @version 1.0
 // @description Moodly Backend API
-// @host 13.229.240.129:8080
+// @host 13.250.43.50:8080
 // @BasePath /
 
 // @securityDefinitions.apikey BearerAuth
